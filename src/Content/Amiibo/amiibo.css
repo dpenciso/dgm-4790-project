@@ -8,3 +8,7 @@
     background-repeat: none;
     background-attachment: fixed;
 }
+
+.searchInput {
+    margin: 1rem;
+}

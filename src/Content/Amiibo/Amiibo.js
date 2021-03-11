@@ -10,16 +10,18 @@ import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 import "./amiibo.css";
 import LazyLoad from "react-lazyload";
+import { IconButton, TextField } from "@material-ui/core";
+import SearchIcon from '@material-ui/icons/Search';
 
 function Amiibo() {
-  const [amiibos, setAmiibos] = useState(null);
+  const [amiibos, setAmiibos] = useState([]);
 
   const apiURL = "https://www.amiiboapi.com/api/amiibo/";
 
   const fetchData = async () => {
     const response = await axios.get(apiURL);
 
-    setAmiibos(response.data.amiibo);
+    setAmiibos(response.data.amiibo.splice(0, 50));
   };
 
   useEffect(() => {
@@ -40,6 +42,13 @@ function Amiibo() {
 
   return (
     <div className="app">
+      <form className="searchInput">
+        <TextField placeholder="Search" />
+        <IconButton aria-label="search">
+          <SearchIcon />
+        </IconButton>
+
+      </form>
       <div className="container-container">
         {amiibos &&
           amiibos.map((amiibo) => {
