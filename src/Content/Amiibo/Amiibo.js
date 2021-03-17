@@ -6,22 +6,59 @@ import CardActionArea from "@material-ui/core/CardActionArea";
 import CardActions from "@material-ui/core/CardActions";
 import CardContent from "@material-ui/core/CardContent";
 import CardMedia from "@material-ui/core/CardMedia";
-import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 import "./amiibo.css";
 import LazyLoad from "react-lazyload";
-import { IconButton, TextField } from "@material-ui/core";
-import SearchIcon from '@material-ui/icons/Search';
+import {
+  IconButton,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+} from "@material-ui/core";
+import SearchIcon from "@material-ui/icons/Search";
+import EditIcon from "@material-ui/icons/Edit";
+import DeleteIcon from "@material-ui/icons/Delete";
 
 function Amiibo() {
   const [amiibos, setAmiibos] = useState([]);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [selectedAmiibo, setSelectedAmiibo] = useState(null)
 
-  const apiURL = "https://www.amiiboapi.com/api/amiibo/";
+  const handleClickDeleteOpen = (amiibo) => {
+    setSelectedAmiibo(amiibo)
+    console.log(amiibo)
+    setDeleteOpen(true);
+  };
+
+  const handleCloseDelete = async () => {
+    setDeleteOpen(false);
+  };
+
+  const handleDelete = async () => {
+    setDeleteOpen(false)
+    try {
+      await axios.delete(`http://localhost:5050/amiibo/delete`, {
+        data: {
+          amiiboId: selectedAmiibo._id
+        }
+      })
+      fetchData()
+    } catch (err) {
+      console.error(err)
+    }
+    console.log(selectedAmiibo._id)
+  }
+
+  const apiURL = "http://localhost:5050/amiibo";
 
   const fetchData = async () => {
     const response = await axios.get(apiURL);
 
-    setAmiibos(response.data.amiibo.splice(0, 50));
+    setAmiibos(response.data);
   };
 
   useEffect(() => {
@@ -47,7 +84,6 @@ function Amiibo() {
         <IconButton aria-label="search">
           <SearchIcon />
         </IconButton>
-
       </form>
       <div className="container-container">
         {amiibos &&
@@ -81,24 +117,33 @@ function Amiibo() {
                     </CardContent>
                   </CardActionArea>
                   <CardActions>
-                    <Button
-                      size="small"
-                      color="primary"
-                      onClick={() =>
-                        window.open(
-                          "https://www.nintendo.com/amiibo/",
-                          "_blank"
-                        )
-                      }
+                    <IconButton aria-label="edit">
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      aria-label="delete"
+                      onClick={() => handleClickDeleteOpen(amiibo)}
                     >
-                      Learn More
-                    </Button>
+                      <DeleteIcon />
+                    </IconButton>
                   </CardActions>
                 </Card>
               </div>
             );
           })}
       </div>
+      <Dialog open={deleteOpen} onClose={handleCloseDelete}>
+        <DialogTitle>Delete Amiibo</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this Amiibo?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDelete}>Cancel</Button>
+          <Button onClick={handleDelete}>Delete</Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
