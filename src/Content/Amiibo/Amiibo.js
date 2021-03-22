@@ -34,6 +34,8 @@ function Amiibo() {
     setDeleteOpen(true);
   };
 
+ const apiURL = "https://dgm-4790-server.herokuapp.com/amiibo";
+
   const handleCloseDelete = async () => {
     setDeleteOpen(false);
   };
@@ -41,7 +43,7 @@ function Amiibo() {
   const handleDelete = async () => {
     setDeleteOpen(false)
     try {
-      await axios.delete(`http://localhost:5050/amiibo/delete`, {
+      await axios.delete(`${apiURL}/delete`, {
         data: {
           amiiboId: selectedAmiibo._id
         }
@@ -53,7 +55,7 @@ function Amiibo() {
     console.log(selectedAmiibo._id)
   }
 
-  const apiURL = "http://localhost:5050/amiibo";
+ 
 
   const fetchData = async () => {
     const response = await axios.get(apiURL);
