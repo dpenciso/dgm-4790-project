@@ -18,7 +18,6 @@ import {
   DialogContentText,
   DialogActions,
   Button,
-  Box,
 } from "@material-ui/core";
 import SearchIcon from "@material-ui/icons/Search";
 import EditIcon from "@material-ui/icons/Edit";
@@ -31,7 +30,14 @@ function Amiibo() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedAmiibo, setSelectedAmiibo] = useState({ name: "" });
   const [editOpen, setEditOpen] = useState(false);
-  const apiURL = "http://localhost:5050/amiibo";
+  const [postAmiibo, setPostAmiibo] = useState({ name: "", game: "", image: "", id: "", release: "" });
+  const apiURL = "https://dgm-4790-server.herokuapp.com/amiibo";
+
+  const fetchData = async () => {
+    const response = await axios.get(apiURL);
+
+    setAmiibos(response.data);
+  };
 
   const handleClickEditOpen = (amiibo) => {
     setSelectedAmiibo(amiibo);
@@ -43,7 +49,7 @@ function Amiibo() {
   };
 
   const handleUpdate = async (values) => {
-    console.log(selectedAmiibo._id)
+    console.log(selectedAmiibo._id);
     try {
       console.log("working");
       const result = await axios.put(`${apiURL}/update`, {
@@ -51,16 +57,32 @@ function Amiibo() {
           name: values.name,
           game: values.game,
           release: values.release,
-          amiiboId: selectedAmiibo._id
+          amiiboId: selectedAmiibo._id,
         },
-
-      });        console.log(result)
+      });
+      console.log(result);
       if (result.status === 200) {
         fetchData();
       }
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handlePostNewAmiibo = async () => {
+    setPostAmiibo()
+    try {
+      await axios.post(`${apiURL}/`, {
+        name: postAmiibo.name,
+        game: postAmiibo.game,
+        image: postAmiibo.image,
+        id: postAmiibo.id,
+        release: postAmiibo.release,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+    fetchData();
   };
 
   const handleClickDeleteOpen = (amiibo) => {
@@ -75,7 +97,7 @@ function Amiibo() {
 
   const handleDelete = async () => {
     setDeleteOpen(false);
-    console.log(selectedAmiibo._id)
+    console.log(selectedAmiibo._id);
     try {
       await axios.delete(`${apiURL}/delete`, {
         data: {
@@ -87,12 +109,6 @@ function Amiibo() {
       console.error(err);
     }
     console.log(selectedAmiibo._id);
-  };
-
-  const fetchData = async () => {
-    const response = await axios.get(apiURL);
-
-    setAmiibos(response.data);
   };
 
   useEffect(() => {
@@ -119,6 +135,125 @@ function Amiibo() {
           <SearchIcon />
         </IconButton>
       </form>
+
+      <Formik
+        initialValues={{
+          name: "",
+          game: "",
+          release: "",
+        }}
+        validationSchema={Yup.object().shape({
+          name: Yup.string("Enter Amiibo name.").required("Name is required"),
+          game: Yup.string("Amiibo game"),
+          image: Yup.string("Image"),
+          id: Yup.string("ID").required("ID is required"),
+          release: Yup.string("Release date"),
+        })}
+        onSubmit={async ({ setErrors, setStatus, setSubmitting }) => {
+          try {
+            await handlePostNewAmiibo();
+          } catch (err) {
+            console.error(err);
+            setStatus({ success: false });
+            setErrors({ submit: err.message });
+            setSubmitting(false);
+          }
+        }}
+      >
+        {({
+          values,
+          errors,
+          touched,
+          handleChange,
+          handleBlur,
+          handleSubmit,
+        }) => (
+          <form
+            noValidate
+            autoComplete="off"
+            onSubmit={handleSubmit}
+            className={classes.dialogContent}
+          >
+            <h3>Fill in the information to create your new Amiibo:</h3>
+            <div>
+              {" "}
+              <TextField
+                autoFocus
+                id="name"
+                name="name"
+                label="Amiibo Name"
+                type="text"
+                style={{ margin: "1rem" }}
+                value={values.name}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={Boolean(touched.name && errors.name)}
+                helperText={touched.name && errors.name}
+              />
+              <TextField
+                autoFocus
+                id="game"
+                name="game"
+                label="Game Series"
+                type="text"
+                style={{ margin: "1rem" }}
+                value={values.game}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={Boolean(touched.game && errors.game)}
+                helperText={touched.game && errors.game}
+              />
+              <TextField
+                autoFocus
+                id="image"
+                name="image"
+                label="Image"
+                type="text"
+                style={{ margin: "1rem" }}
+                value={values.image}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={Boolean(touched.image && errors.image)}
+                helperText={touched.image && errors.image}
+              />
+              <TextField
+                autoFocus
+                id="id"
+                name="id"
+                label="ID"
+                type="text"
+                style={{ margin: "1rem" }}
+                value={values.id}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={Boolean(touched.id && errors.id)}
+                helperText={touched.id && errors.id}
+              />
+              <TextField
+                autoFocus
+                name="release"
+                id="release"
+                label="Release Date"
+                type="text"
+                style={{ margin: "1rem" }}
+                value={values.release}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={Boolean(touched.release && errors.release)}
+                helperText={touched.release && errors.release}
+              />
+            </div>
+            <Button
+              type="submit"
+              color="primary"
+              variant="contained"
+              style={{ margin: "1rem" }}
+            >
+              Create Amiibo
+            </Button>
+          </form>
+        )}
+      </Formik>
       <div className="container-container">
         {amiibos &&
           amiibos.map((amiibo) => {
@@ -181,9 +316,7 @@ function Amiibo() {
             release: selectedAmiibo?.release,
           }}
           validationSchema={Yup.object().shape({
-            name: Yup.string("Enter Amiibo name.").required(
-              "Name is required"
-            ),
+            name: Yup.string("Enter Amiibo name.").required("Name is required"),
             game: Yup.string("Amiibo game"),
             release: Yup.string("Release date"),
           })}
@@ -232,34 +365,32 @@ function Amiibo() {
                   error={Boolean(touched.name && errors.name)}
                   helperText={touched.name && errors.name}
                 />
-                <Box className={classes.content}>
-                  <TextField
-                    autoFocus
-                    id="game"
-                    name="game"
-                    label="Game Series"
-                    type="text"
-                    fullWidth
-                    value={values.game}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={Boolean(touched.game && errors.game)}
-                    helperText={touched.game && errors.game}
-                  />
-                  <TextField
-                    autoFocus
-                    name="release"
-                    id="release"
-                    label="Release Date"
-                    type="text"
-                    fullWidth
-                    value={values.release}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={Boolean(touched.release && errors.release)}
-                    helperText={touched.release && errors.release}
-                  />
-                </Box>
+                <TextField
+                  autoFocus
+                  id="game"
+                  name="game"
+                  label="Game Series"
+                  type="text"
+                  fullWidth
+                  value={values.game}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={Boolean(touched.game && errors.game)}
+                  helperText={touched.game && errors.game}
+                />
+                <TextField
+                  autoFocus
+                  name="release"
+                  id="release"
+                  label="Release Date"
+                  type="text"
+                  fullWidth
+                  value={values.release}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={Boolean(touched.release && errors.release)}
+                  helperText={touched.release && errors.release}
+                />
               </DialogContent>
               <DialogActions>
                 <Button onClick={handleCloseEdit} color="primary">
