@@ -12,7 +12,7 @@ import { SignContext } from "../../Contexts/signContext"
 import './Email.css'
 
 export default function Email() {
-  const [open, setOpen] = React.useState(true);
+  const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
     setOpen(true);

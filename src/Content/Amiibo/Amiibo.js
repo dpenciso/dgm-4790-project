@@ -18,44 +18,76 @@ import {
   DialogContentText,
   DialogActions,
   Button,
+  Box,
 } from "@material-ui/core";
 import SearchIcon from "@material-ui/icons/Search";
 import EditIcon from "@material-ui/icons/Edit";
 import DeleteIcon from "@material-ui/icons/Delete";
+import { Formik } from "formik";
+import * as Yup from "yup";
 
 function Amiibo() {
   const [amiibos, setAmiibos] = useState([]);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [selectedAmiibo, setSelectedAmiibo] = useState(null)
+  const [selectedAmiibo, setSelectedAmiibo] = useState({ name: "" });
+  const [editOpen, setEditOpen] = useState(false);
+  const apiURL = "http://localhost:5050/amiibo";
 
-  const handleClickDeleteOpen = (amiibo) => {
-    setSelectedAmiibo(amiibo)
-    console.log(amiibo)
-    setDeleteOpen(true);
+  const handleClickEditOpen = (amiibo) => {
+    setSelectedAmiibo(amiibo);
+    setEditOpen(true);
   };
 
- const apiURL = "https://dgm-4790-server.herokuapp.com/amiibo";
+  const handleCloseEdit = () => {
+    setEditOpen(false);
+  };
+
+  const handleUpdate = async (values) => {
+    console.log(selectedAmiibo._id)
+    try {
+      console.log("working");
+      const result = await axios.put(`${apiURL}/update`, {
+        data: {
+          name: values.name,
+          game: values.game,
+          release: values.release,
+          amiiboId: selectedAmiibo._id
+        },
+
+      });        console.log(result)
+      if (result.status === 200) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleClickDeleteOpen = (amiibo) => {
+    setSelectedAmiibo(amiibo);
+    console.log(amiibo);
+    setDeleteOpen(true);
+  };
 
   const handleCloseDelete = async () => {
     setDeleteOpen(false);
   };
 
   const handleDelete = async () => {
-    setDeleteOpen(false)
+    setDeleteOpen(false);
+    console.log(selectedAmiibo._id)
     try {
       await axios.delete(`${apiURL}/delete`, {
         data: {
-          amiiboId: selectedAmiibo._id
-        }
-      })
-      fetchData()
+          amiiboId: selectedAmiibo._id,
+        },
+      });
+      fetchData();
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
-    console.log(selectedAmiibo._id)
-  }
-
- 
+    console.log(selectedAmiibo._id);
+  };
 
   const fetchData = async () => {
     const response = await axios.get(apiURL);
@@ -112,14 +144,17 @@ function Amiibo() {
                         color="textSecondary"
                         component="p"
                       >
-                        The {amiibo.name} Amiibo, from the {amiibo.gameSeries}{" "}
-                        series, was originally released in North America on{" "}
-                        {amiibo.release.na}
+                        The {amiibo.name} Amiibo, from the {amiibo.game} series,
+                        was originally released in North America on{" "}
+                        {amiibo.release}.
                       </Typography>
                     </CardContent>
                   </CardActionArea>
                   <CardActions>
-                    <IconButton aria-label="edit">
+                    <IconButton
+                      aria-label="edit"
+                      onClick={() => handleClickEditOpen(amiibo)}
+                    >
                       <EditIcon />
                     </IconButton>
                     <IconButton
@@ -134,6 +169,110 @@ function Amiibo() {
             );
           })}
       </div>
+      <Dialog
+        open={editOpen}
+        onClose={handleCloseEdit}
+        aria-labelledby="edit-dialog-title"
+      >
+        <Formik
+          initialValues={{
+            name: selectedAmiibo?.name,
+            game: selectedAmiibo?.game,
+            release: selectedAmiibo?.release,
+          }}
+          validationSchema={Yup.object().shape({
+            name: Yup.string("Enter Amiibo name.").required(
+              "Name is required"
+            ),
+            game: Yup.string("Amiibo game"),
+            release: Yup.string("Release date"),
+          })}
+          onSubmit={async (values, { setErrors, setStatus, setSubmitting }) => {
+            try {
+              console.log("worked");
+              await handleUpdate(values);
+              handleCloseEdit();
+            } catch (err) {
+              console.error(err);
+              setStatus({ success: false });
+              setErrors({ submit: err.message });
+              setSubmitting(false);
+            }
+          }}
+        >
+          {({
+            values,
+            errors,
+            touched,
+            handleChange,
+            handleBlur,
+            handleSubmit,
+          }) => (
+            <form
+              noValidate
+              autoComplete="off"
+              onSubmit={handleSubmit}
+              className={classes.dialogContent}
+            >
+              <DialogTitle id="edit-dialog-title">Edit Amiibo</DialogTitle>
+              <DialogContent>
+                <DialogContentText>
+                  Make changes below to the data about this Amiibo:
+                </DialogContentText>
+                <TextField
+                  autoFocus
+                  id="name"
+                  name="name"
+                  label="Amiibo Name"
+                  type="text"
+                  fullWidth
+                  value={values.name}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={Boolean(touched.name && errors.name)}
+                  helperText={touched.name && errors.name}
+                />
+                <Box className={classes.content}>
+                  <TextField
+                    autoFocus
+                    id="game"
+                    name="game"
+                    label="Game Series"
+                    type="text"
+                    fullWidth
+                    value={values.game}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={Boolean(touched.game && errors.game)}
+                    helperText={touched.game && errors.game}
+                  />
+                  <TextField
+                    autoFocus
+                    name="release"
+                    id="release"
+                    label="Release Date"
+                    type="text"
+                    fullWidth
+                    value={values.release}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={Boolean(touched.release && errors.release)}
+                    helperText={touched.release && errors.release}
+                  />
+                </Box>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleCloseEdit} color="primary">
+                  Cancel
+                </Button>
+                <Button type="submit" color="primary">
+                  Save
+                </Button>
+              </DialogActions>
+            </form>
+          )}
+        </Formik>
+      </Dialog>
       <Dialog open={deleteOpen} onClose={handleCloseDelete}>
         <DialogTitle>Delete Amiibo</DialogTitle>
         <DialogContent>
