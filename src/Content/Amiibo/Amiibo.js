@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { makeStyles } from "@material-ui/core/styles";
 import Card from "@material-ui/core/Card";
@@ -24,6 +24,7 @@ import EditIcon from "@material-ui/icons/Edit";
 import DeleteIcon from "@material-ui/icons/Delete";
 import { Formik } from "formik";
 import * as Yup from "yup";
+import _ from 'lodash'
 
 function Amiibo() {
   const [amiibos, setAmiibos] = useState([]);
@@ -31,13 +32,32 @@ function Amiibo() {
   const [selectedAmiibo, setSelectedAmiibo] = useState({ name: "" });
   const [editOpen, setEditOpen] = useState(false);
   const [postAmiibo, setPostAmiibo] = useState({ name: "", game: "", image: "", id: "", release: "" });
+  const [debouncedName, setDebouncedName] = useState('')
   const apiURL = "https://dgm-4790-server.herokuapp.com/amiibo";
 
   const fetchData = async () => {
     const response = await axios.get(apiURL);
-
     setAmiibos(response.data);
   };
+
+  const handleInput = (event) => {
+    debounce(event.target.value)
+  }
+
+  const debounce = useCallback(
+    _.debounce((searchVal) => {
+      setDebouncedName(searchVal)
+    }, 1000),
+    [],
+  )
+
+  const handleSearch = () => {
+    if (debouncedName) {
+      setAmiibos(amiibos.filter(amiibo => amiibo.name.toLowerCase().includes(debouncedName.toLowerCase())))
+    } else {
+      fetchData()
+    }
+  }
 
   const handleClickEditOpen = (amiibo) => {
     setSelectedAmiibo(amiibo);
@@ -130,17 +150,19 @@ function Amiibo() {
   return (
     <div className="app">
       <form className="searchInput">
-        <TextField placeholder="Search" />
-        <IconButton aria-label="search">
+        <TextField placeholder="Search" onChange={handleInput} />
+        <IconButton aria-label="search" onClick={handleSearch}>
           <SearchIcon />
         </IconButton>
       </form>
 
       <Formik
         initialValues={{
-          name: "",
-          game: "",
-          release: "",
+          name: " ",
+          game: " ",
+          image: " ",
+          id: " ",
+          release: " ",
         }}
         validationSchema={Yup.object().shape({
           name: Yup.string("Enter Amiibo name.").required("Name is required"),
